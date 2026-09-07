@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CPU / GPU Bottleneck Calculator</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    min-height:100vh;
+    padding:30px 15px;
+    font-family:Arial,Helvetica,sans-serif;
+    color:#f5f7fb;
+    background:
+        radial-gradient(circle at top,#1c2944 0%,#0b111d 48%,#05080e 100%);
+}
+
+.container{
+    width:min(1100px,100%);
+    margin:auto;
+    padding:30px;
+    background:rgba(10,16,28,.96);
+    border:1px solid #293852;
+    border-radius:24px;
+    box-shadow:0 25px 80px rgba(0,0,0,.45);
+}
+
+h1{
+    margin:0;
+    text-align:center;
+    font-size:clamp(28px,5vw,46px);
+}
+
+.subtitle{
+    text-align:center;
+    color:#9daabd;
+    margin:10px 0 28px;
+}
+
+.database{
+    text-align:center;
+    padding:10px;
+    margin-bottom:22px;
+    border-radius:12px;
+    background:#111a2b;
+    border:1px solid #293852;
+    color:#91a0b7;
+    font-size:13px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+}
+
+.section{
+    margin-bottom:18px;
+}
+
+label{
+    display:block;
+    margin-bottom:8px;
+    font-weight:bold;
+    color:#dce5f3;
+}
+
+select{
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:1px solid #34445f;
+    background:#111a2a;
+    color:white;
+    font-size:15px;
+}
+
+select:focus{
+    outline:none;
+    border-color:#22c55e;
+    box-shadow:0 0 0 3px rgba(34,197,94,.12);
+}
+
+button{
+    width:100%;
+    padding:15px;
+    margin:5px 0 28px;
+    border:0;
+    border-radius:12px;
+    background:linear-gradient(135deg,#16a34a,#22c55e);
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.2s;
+}
+
+button:hover{
+    transform:translateY(-2px);
+    filter:brightness(1.08);
+}
+
+.meter-title,
+.meter-labels{
+    display:flex;
+    justify-content:space-between;
+    color:#aab8cd;
+    font-size:13px;
+}
+
+.meter{
+    position:relative;
+    height:32px;
+    margin:10px 0 8px;
+    border-radius:999px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #ef4444 0%,
+            #f97316 18%,
+            #facc15 35%,
+            #22c55e 50%,
+            #facc15 65%,
+            #f97316 82%,
+            #ef4444 100%
+        );
+
+    box-shadow:
+        inset 0 0 12px rgba(0,0,0,.35);
+}
+
+.marker{
+    position:absolute;
+    top:-7px;
+    left:50%;
+
+    width:7px;
+    height:46px;
+
+    background:white;
+    border-radius:5px;
+
+    transform:translateX(-50%);
+
+    box-shadow:
+        0 0 0 2px #101722,
+        0 0 18px rgba(255,255,255,.9);
+
+    transition:left .55s cubic-bezier(.2,.8,.2,1);
+}
+
+.result{
+    margin-top:28px;
+    padding:25px;
+    text-align:center;
+
+    border-radius:18px;
+    border:1px solid #293853;
+    background:#0c1422;
+}
+
+.status{
+    font-size:25px;
+    font-weight:900;
+}
+
+.percentage{
+    margin:8px 0;
+    font-size:42px;
+    font-weight:900;
+}
+
+.description{
+    max-width:800px;
+    margin:auto;
+    color:#9facbf;
+    line-height:1.7;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px;
+    margin-top:20px;
+}
+
+.stat{
+    padding:14px;
+    border-radius:12px;
+    background:#121e31;
+    border:1px solid #293a56;
+}
+
+.stat-title{
+    color:#8392a9;
+    font-size:12px;
+}
+
+.stat-value{
+    margin-top:5px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.note{
+    display:block;
+    margin-top:20px;
+    text-align:center;
+    color:#77869d;
+    font-size:12px;
+    line-height:1.6;
+}
+
+@media(max-width:750px){
+
+    .container{
+        padding:20px;
+    }
+
+    .grid{
+        grid-template-columns:1fr;
+        gap:0;
+    }
+
+    .stats{
+        grid-template-columns:1fr;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>CPU / GPU Bottleneck Calculator</h1>
+
+<p class="subtitle">
+Gaming balance estimator based on relative hardware performance
+</p>
+
+<div class="database">
+Benchmark-index model • Resolution-aware • Game-type aware • Target-FPS aware
+</div>
+
+
+<!-- CPU / GPU -->
+
+<div class="grid">
+
+<div class="section">
+
+<label for="cpu">
+Processor
+</label>
+
+<select id="cpu">
+
+<option value="44">Intel Core i3-530</option>
+<option value="48">Intel Core i5-750</option>
+<option value="55">Intel Core i7-860</option>
+
+<option value="55">Intel Core i3-2100</option>
+<option value="63">Intel Core i5-2400</option>
+<option value="69">Intel Core i5-2500K</option>
+<option value="78">Intel Core i7-2600K</option>
+
+<option value="60">Intel Core i3-3220</option>
+<option value="70">Intel Core i5-3470</option>
+<option value="75">Intel Core i5-3570K</option>
+<option value="83">Intel Core i7-3770K</option>
+
+<option value="61">Intel Core i3-4130</option>
+<option value="69">Intel Core i5-4460</option>
+<option value="74">Intel Core i5-4590</option>
+<option value="79">Intel Core i5-4690K</option>
+<option value="87">Intel Core i7-4770K</option>
+<option value="90">Intel Core i7-4790K</option>
+
+<option value="64">Intel Core i3-6100</option>
+<option value="71">Intel Core i5-6400</option>
+<option value="76">Intel Core i5-6500</option>
+<option value="81">Intel Core i5-6600K</option>
+<option value="91">Intel Core i7-6700K</option>
+
+<option value="66">Intel Core i3-7100</option>
+<option value="73">Intel Core i5-7400</option>
+<option value="78">Intel Core i5-7500</option>
+<option value="84">Intel Core i5-7600K</option>
+<option value="96">Intel Core i7-7700K</option>
+
+<option value="75">Intel Core i3-8100</option>
+<option value="84">Intel Core i5-8400</option>
+<option value="90">Intel Core i5-8600K</option>
+<option value="103">Intel Core i7-8700K</option>
+
+<option value="75">Intel Core i3-9100F</option>
+<option value="85">Intel Core i5-9400F</option>
+<option value="93">Intel Core i5-9600K</option>
+<option value="105">Intel Core i7-9700K</option>
+<option value="113">Intel Core i9-9900K</option>
+
+<option value="80">Intel Core i3-10100F</option>
+<option value="89">Intel Core i5-10400F</option>
+<option value="98">Intel Core i5-10600K</option>
+<option value="112">Intel Core i7-10700K</option>
+<option value="121">Intel Core i9-10900K</option>
+
+<option value="97">Intel Core i5-11400F</option>
+<option value="105">Intel Core i5-11600K</option>
+<option value="119">Intel Core i7-11700K</option>
+<option value="124">Intel Core i9-11900K</option>
+
+<option value="102">Intel Core i3-12100F</option>
+<option value="113">Intel Core i5-12400F</option>
+<option value="125">Intel Core i5-12600K</option>
+<option value="143">Intel Core i7-12700K</option>
+<option value="154">Intel Core i9-12900K</option>
+
+<option value="106">Intel Core i3-13100F</option>
+<option value="121">Intel Core i5-13400F</option>
+<option value="143">Intel Core i5-13600K</option>
+<option value="159">Intel Core i7-13700K</option>
+<option value="171">Intel Core i9-13900K</option>
+
+<option value="109">Intel Core i3-14100F</option>
+<option value="129">Intel Core i5-14400F</option>
+<option value="149">Intel Core i5-14600K</option>
+<option value="169">Intel Core i7-14700K</option>
+<option value="181">Intel Core i9-14900K</option>
+
+<option value="128">Intel Core Ultra 5 225F</option>
+<option value="151">Intel Core Ultra 5 245K</option>
+<option value="167">Intel Core Ultra 7 265K</option>
+<option value="183">Intel Core Ultra 9 285K</option>
+<option value="187">Intel Core Ultra 7 270K Plus</option>
+<option value="170">Intel Core Ultra 5 250K Plus</option>
+
+<option value="54">AMD FX-6300</option>
+<option value="65">AMD FX-8350</option>
+
+<option value="57">AMD Ryzen 3 1200</option>
+<option value="65">AMD Ryzen 5 1400</option>
+<option value="73">AMD Ryzen 5 1600</option>
+<option value="82">AMD Ryzen 7 1700</option>
+
+<option value="62">AMD Ryzen 3 2200G</option>
+<option value="68">AMD Ryzen 5 2400G</option>
+<option value="80">AMD Ryzen 5 2600</option>
+<option value="84">AMD Ryzen 5 2600X</option>
+<option value="92">AMD Ryzen 7 2700X</option>
+
+<option value="78">AMD Ryzen 3 3100</option>
+<option value="96">AMD Ryzen 5 3600</option>
+<option value="100">AMD Ryzen 5 3600X</option>
+<option value="109">AMD Ryzen 7 3700X</option>
+<option value="127">AMD Ryzen 9 3900X</option>
+<option value="139">AMD Ryzen 9 3950X</option>
+
+<option value="86">AMD Ryzen 5 4500</option>
+<option value="90">AMD Ryzen 5 4600G</option>
+<option value="101">AMD Ryzen 7 4700G</option>
+
+<option value="90">AMD Ryzen 5 5500</option>
+<option value="110">AMD Ryzen 5 5600</option>
+<option value="114">AMD Ryzen 5 5600X</option>
+<option value="121">AMD Ryzen 7 5700X</option>
+<option value="126">AMD Ryzen 7 5800X</option>
+<option value="138">AMD Ryzen 7 5700X3D</option>
+<option value="143">AMD Ryzen 7 5800X3D</option>
+<option value="145">AMD Ryzen 9 5900X</option>
+<option value="153">AMD Ryzen 9 5950X</option>
+
+<option value="118">AMD Ryzen 5 7500F</option>
+<option value="123">AMD Ryzen 5 7600</option>
+<option value="127">AMD Ryzen 5 7600X</option>
+<option value="134">AMD Ryzen 7 7700</option>
+<option value="140">AMD Ryzen 7 7700X</option>
+<option value="160">AMD Ryzen 7 7800X3D</option>
+<option value="153">AMD Ryzen 9 7900X</option>
+<option value="165">AMD Ryzen 9 7950X</option>
+<option value="172">AMD Ryzen 9 7950X3D</option>
+
+<option value="109">AMD Ryzen 5 8500G</option>
+<option value="115">AMD Ryzen 5 8600G</option>
+<option value="127">AMD Ryzen 7 8700G</option>
+
+<option value="132">AMD Ryzen 5 9600</option>
+<option value="138">AMD Ryzen 5 9600X</option>
+<option value="150">AMD Ryzen 7 9700X</option>
+<option value="176">AMD Ryzen 7 9800X3D</option>
+<option value="163">AMD Ryzen 9 9900X</option>
+<option value="176">AMD Ryzen 9 9900X3D</option>
+<option value="175">AMD Ryzen 9 9950X</option>
+<option value="186">AMD Ryzen 9 9950X3D</option>
+<option value="187">AMD Ryzen 7 9850X3D</option>
+
+</select>
+
+</div>
+
+
+<!-- GPU -->
+
+<div class="section">
+
+<label for="gpu">
+Graphics Card
+</label>
+
+<select id="gpu">
+
+<option value="35">NVIDIA GTX 460</option>
+<option value="40">NVIDIA GTX 470</option>
+<option value="44">NVIDIA GTX 480</option>
+<option value="32">NVIDIA GTX 550 Ti</option>
+<option value="41">NVIDIA GTX 560</option>
+<option value="47">NVIDIA GTX 560 Ti</option>
+<option value="51">NVIDIA GTX 570</option>
+<option value="57">NVIDIA GTX 580</option>
+
+<option value="34">NVIDIA GTX 650</option>
+<option value="41">NVIDIA GTX 650 Ti</option>
+<option value="49">NVIDIA GTX 660</option>
+<option value="55">NVIDIA GTX 660 Ti</option>
+<option value="60">NVIDIA GTX 670</option>
+<option value="65">NVIDIA GTX 680</option>
+<option value="54">NVIDIA GTX 760</option>
+<option value="63">NVIDIA GTX 770</option>
+<option value="71">NVIDIA GTX 780</option>
+<option value="78">NVIDIA GTX 780 Ti</option>
+
+<option value="49">NVIDIA GTX 950</option>
+<option value="57">NVIDIA GTX 960</option>
+<option value="70">NVIDIA GTX 970</option>
+<option value="79">NVIDIA GTX 980</option>
+<option value="89">NVIDIA GTX 980 Ti</option>
+
+<option value="23">NVIDIA GT 1030</option>
+<option value="33">NVIDIA GTX 1050</option>
+<option value="40">NVIDIA GTX 1050 Ti</option>
+<option value="49">NVIDIA GTX 1060 3GB</option>
+<option value="54">NVIDIA GTX 1060 6GB</option>
+<option value="65">NVIDIA GTX 1070</option>
+<option value="72">NVIDIA GTX 1070 Ti</option>
+<option value="79">NVIDIA GTX 1080</option>
+<option value="93">NVIDIA GTX 1080 Ti</option>
+
+<option value="49">NVIDIA GTX 1650</option>
+<option value="57">NVIDIA GTX 1650 Super</option>
+<option value="64">NVIDIA GTX 1660</option>
+<option value="70">NVIDIA GTX 1660 Super</option>
+<option value="73">NVIDIA GTX 1660 Ti</option>
+
+<option value="74">NVIDIA RTX 2060</option>
+<option value="82">NVIDIA RTX 2060 Super</option>
+<option value="88">NVIDIA RTX 2070</option>
+<option value="96">NVIDIA RTX 2070 Super</option>
+<option value="104">NVIDIA RTX 2080</option>
+<option value="110">NVIDIA RTX 2080 Super</option>
+<option value="123">NVIDIA RTX 2080 Ti</option>
+
+<option value="64">NVIDIA RTX 3050</option>
+<option value="88">NVIDIA RTX 3060</option>
+<option value="103">NVIDIA RTX 3060 Ti</option>
+<option value="114">NVIDIA RTX 3070</option>
+<option value="122">NVIDIA RTX 3070 Ti</option>
+<option value="139">NVIDIA RTX 3080</option>
+<option value="153">NVIDIA RTX 3080 Ti</option>
+<option value="160">NVIDIA RTX 3090</option>
+<option value="172">NVIDIA RTX 3090 Ti</option>
+
+<option value="96">NVIDIA RTX 4060</option>
+<option value="108">NVIDIA RTX 4060 Ti 8GB</option>
+<option value="110">NVIDIA RTX 4060 Ti 16GB</option>
+<option value="128">NVIDIA RTX 4070</option>
+<option value="141">NVIDIA RTX 4070 Super</option>
+<option value="150">NVIDIA RTX 4070 Ti</option>
+<option value="158">NVIDIA RTX 4070 Ti Super</option>
+<option value="175">NVIDIA RTX 4080</option>
+<option value="181">NVIDIA RTX 4080 Super</option>
+<option value="205">NVIDIA RTX 4090</option>
+
+<option value="115">NVIDIA RTX 5050</option>
+<option value="140">NVIDIA RTX 5060</option>
+<option value="151">NVIDIA RTX 5060 Ti 8GB</option>
+<option value="154">NVIDIA RTX 5060 Ti 16GB</option>
+<option value="170">NVIDIA RTX 5070</option>
+<option value="187">NVIDIA RTX 5070 Ti</option>
+<option value="211">NVIDIA RTX 5080</option>
+<option value="245">NVIDIA RTX 5090</option>
+
+<option value="39">AMD Radeon HD 5850</option>
+<option value="45">AMD Radeon HD 5870</option>
+<option value="46">AMD Radeon HD 6950</option>
+<option value="52">AMD Radeon HD 6970</option>
+<option value="57">AMD Radeon HD 7870</option>
+<option value="65">AMD Radeon HD 7950</option>
+<option value="71">AMD Radeon HD 7970</option>
+
+<option value="39">AMD Radeon R7 260X</option>
+<option value="51">AMD Radeon R9 270X</option>
+<option value="61">AMD Radeon R9 280X</option>
+<option value="70">AMD Radeon R9 290</option>
+<option value="76">AMD Radeon R9 290X</option>
+<option value="74">AMD Radeon R9 390</option>
+<option value="81">AMD Radeon R9 390X</option>
+<option value="84">AMD Radeon R9 Fury</option>
+<option value="91">AMD Radeon R9 Fury X</option>
+
+<option value="39">AMD RX 460</option>
+<option value="51">AMD RX 470</option>
+<option value="57">AMD RX 480</option>
+<option value="26">AMD RX 550</option>
+<option value="35">AMD RX 560</option>
+<option value="53">AMD RX 570</option>
+<option value="60">AMD RX 580</option>
+<option value="68">AMD RX 590</option>
+
+<option value="80">AMD Vega 56</option>
+<option value="88">AMD Vega 64</option>
+
+<option value="74">AMD RX 5500 XT</option>
+<option value="88">AMD RX 5600 XT</option>
+<option value="94">AMD RX 5700</option>
+<option value="103">AMD RX 5700 XT</option>
+
+<option value="54">AMD RX 6500 XT</option>
+<option value="90">AMD RX 6600</option>
+<option value="98">AMD RX 6600 XT</option>
+<option value="103">AMD RX 6650 XT</option>
+<option value="116">AMD RX 6700 XT</option>
+<option value="123">AMD RX 6750 XT</option>
+<option value="139">AMD RX 6800</option>
+<option value="154">AMD RX 6800 XT</option>
+<option value="169">AMD RX 6900 XT</option>
+<option value="177">AMD RX 6950 XT</option>
+
+<option value="98">AMD RX 7600</option>
+<option value="108">AMD RX 7600 XT</option>
+<option value="129">AMD RX 7700 XT</option>
+<option value="146">AMD RX 7800 XT</option>
+<option value="157">AMD RX 7900 GRE</option>
+<option value="180">AMD RX 7900 XT</option>
+<option value="199">AMD RX 7900 XTX</option>
+
+<option value="121">AMD RX 9060 XT 8GB</option>
+<option value="127">AMD RX 9060 XT 16GB</option>
+<option value="178">AMD RX 9070</option>
+<option value="199">AMD RX 9070 XT</option>
+
+</select>
+
+</div>
+
+</div>
+
+
+<!-- SCENARIO -->
+
+<div class="grid">
+
+<div class="section">
+
+<label for="gameType">
+Game Type
+</label>
+
+<select id="gameType">
+
+<option value="balanced">
+Balanced / AAA
+</option>
+
+<option value="cpu">
+CPU Heavy / Simulation
+</option>
+
+<option value="esports">
+Competitive / High FPS
+</option>
+
+<option value="gpu">
+GPU Heavy / Ray Tracing
+</option>
+
+</select>
+
+</div>
+
+
+<div class="section">
+
+<label for="resolution">
+Resolution
+</label>
+
+<select id="resolution">
+
+<option value="0.58">
+720p
+</option>
+
+<option value="0.70">
+900p
+</option>
+
+<option value="1.00" selected>
+1080p
+</option>
+
+<option value="0.78">
+1440p
+</option>
+
+<option value="0.55">
+4K
+</option>
+
+<option value="0.46">
+5K
+</option>
+
+<option value="0.40">
+6K
+</option>
+
+<option value="0.34">
+8K
+</option>
+
+<option value="0.27">
+12K
+</option>
+
+<option value="0.22">
+16K
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+
+<!-- FPS -->
+
+<div class="section">
+
+<label for="targetFPS">
+Target FPS
+</label>
+
+<select id="targetFPS">
+
+<option value="60">
+60 FPS
+</option>
+
+<option value="75">
+75 FPS
+</option>
+
+<option value="120">
+120 FPS
+</option>
+
+<option value="144" selected>
+144 FPS
+</option>
+
+<option value="165">
+165 FPS
+</option>
+
+<option value="240">
+240 FPS
+</option>
+
+<option value="360">
+360 FPS
+</option>
+
+</select>
+
+</div>
+
+
+<button id="calculate">
+Calculate System Balance
+</button>
+
+
+<!-- METER -->
+
+<div class="meter-title">
+
+<span>
+CPU Limit
+</span>
+
+<span>
+GPU Limit
+</span>
+
+</div>
+
+
+<div class="meter">
+
+<div
+class="marker"
+id="marker">
+</div>
+
+</div>
+
+
+<div class="meter-labels">
+
+<span>
+CPU
+</span>
+
+<span>
+Balanced
+</span>
+
+<span>
+GPU
+</span>
+
+</div>
+
+
+<!-- RESULT -->
+
+<div class="result">
+
+<div
+class="status"
+id="status">
+
+Ready
+
+</div>
+
+
+<div
+class="percentage"
+id="percentage">
+
+--
+
+</div>
+
+
+<div
+class="description"
+id="description">
+
+Select your hardware and gaming scenario.
+
+</div>
+
+
+<div class="stats">
+
+<div class="stat">
+
+<div class="stat-title">
+CPU Index
+</div>
+
+<div
+class="stat-value"
+id="cpuIndex">
+
+--
+
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div class="stat-title">
+GPU Index
+</div>
+
+<div
+class="stat-value"
+id="gpuIndex">
+
+--
+
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div class="stat-title">
+Scenario
+</div>
+
+<div
+class="stat-value"
+id="scenario">
+
+--
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<small class="note">
+
+This is a benchmark-indexed estimation model, not a measurement of your PC.
+Actual bottlenecks vary with the exact game, graphics preset, RAM,
+drivers, thermals, background processes and frame-time behavior.
+For the most reliable answer, verify with GPU utilization,
+per-core CPU utilization and frame-time monitoring.
+
+</small>
+
+</div>
+
+
+<script>
+
+/*
+========================================================
+CPU / GPU BALANCE ENGINE
+========================================================
+
+Important:
+
+We intentionally DO NOT claim:
+
+"Your bottleneck is exactly 37.42%"
+
+Instead the engine calculates a relative balance
+and converts it into a severity band.
+
+This avoids false precision.
+*/
+
+
+function calculate(){
+
+    const cpu =
+        document.getElementById("cpu");
+
+    const gpu =
+        document.getElementById("gpu");
+
+    const resolution =
+        parseFloat(
+            document.getElementById("resolution").value
+        );
+
+    const targetFPS =
+        parseInt(
+            document.getElementById("targetFPS").value
+        );
+
+    const gameType =
+        document.getElementById("gameType").value;
+
+
+    const cpuScore =
+        parseFloat(cpu.value);
+
+    const gpuScore =
+        parseFloat(gpu.value);
+
+
+    /*
+    ====================================================
+    GAME PROFILE
+    ====================================================
+    */
+
+    let cpuWeight = 1.0;
+    let gpuWeight = 1.0;
+
+
+    if(gameType === "cpu"){
+
+        cpuWeight = 1.25;
+        gpuWeight = 0.90;
+
+    }
+
+
+    if(gameType === "esports"){
+
+        cpuWeight = 1.32;
+        gpuWeight = 0.92;
+
+    }
+
+
+    if(gameType === "gpu"){
+
+        cpuWeight = 0.88;
+        gpuWeight = 1.22;
+
+    }
+
+
+    /*
+    ====================================================
+    RESOLUTION
+
+    At low resolution CPU pressure becomes more important.
+
+    At high resolution GPU pressure becomes more important.
+    ====================================================
+    */
+
+    const cpuResolutionFactor =
+        1 + ((1 - resolution) * 0.42);
+
+    const gpuResolutionFactor =
+        1 / resolution;
+
+
+    /*
+    ====================================================
+    TARGET FPS
+
+    High refresh rate increases CPU pressure.
+    ====================================================
+    */
+
+    const fpsFactor =
+        1 + Math.max(
+            0,
+            (targetFPS - 60) / 600
+        );
+
+
+    cpuWeight *=
+        cpuResolutionFactor *
+        fpsFactor;
+
+    gpuWeight *=
+        gpuResolutionFactor;
+
+
+    /*
+    ====================================================
+    EFFECTIVE PERFORMANCE
+
+    Higher is better.
+    ====================================================
+    */
+
+    const cpuCapacity =
+        cpuScore * cpuWeight;
+
+    const gpuCapacity =
+        gpuScore * gpuWeight;
+
+
+    /*
+    ====================================================
+    BALANCE
+
+    Ratio around 1.0 = balanced.
+
+    < 1 = CPU side is weaker
+    > 1 = GPU side is weaker
+    ====================================================
+    */
+
+    const ratio =
+        cpuCapacity / gpuCapacity;
+
+
+    /*
+    Convert ratio into a symmetric score.
+
+    Positive:
+    GPU limitation
+
+    Negative:
+    CPU limitation
+    */
+
+    let balance =
+        Math.log(ratio) * 100;
+
+
+    /*
+    Keep the visual marker inside the meter.
+    */
+
+    let marker =
+        50 + balance * 0.65;
+
+    marker =
+        Math.max(
+            2,
+            Math.min(
+                98,
+                marker
+            )
+        );
+
+
+    document
+        .getElementById("marker")
+        .style.left =
+        marker + "%";
+
+
+    /*
+    ====================================================
+    SEVERITY
+    ====================================================
+    */
+
+    const severity =
+        Math.abs(balance);
+
+
+    let status;
+    let explanation;
+
+
+    if(severity < 8){
+
+        status =
+            "Balanced";
+
+        explanation =
+            "The CPU and GPU are reasonably well matched for this gaming scenario. Neither side shows a strong imbalance.";
+
+    }
+
+    else if(severity < 16){
+
+        if(balance < 0){
+
+            status =
+                "Slight CPU Limit";
+
+            explanation =
+                "The processor is somewhat more likely to limit performance, especially in CPU-heavy scenes.";
+
+        }else{
+
+            status =
+                "Slight GPU Limit";
+
+            explanation =
+                "The graphics card is somewhat more likely to limit performance, especially in demanding scenes.";
+
+        }
+
+    }
+
+    else if(severity < 30){
+
+        if(balance < 0){
+
+            status =
+                "Moderate CPU Limit";
+
+            explanation =
+                "The CPU is noticeably weaker for this scenario. A faster processor could improve high-FPS and CPU-heavy workloads.";
+
+        }else{
+
+            status =
+                "Moderate GPU Limit";
+
+            explanation =
+                "The GPU is noticeably weaker for this scenario. Lowering resolution or graphics settings should help.";
+
+        }
+
+    }
+
+    else{
+
+        if(balance < 0){
+
+            status =
+                "Strong CPU Limit";
+
+            explanation =
+                "There is a substantial CPU-side imbalance. The processor is likely to restrict the GPU in this scenario.";
+
+        }else{
+
+            status =
+                "Strong GPU Limit";
+
+            explanation =
+                "There is a substantial GPU-side imbalance. The graphics card is likely to be the main performance limiter.";
+
+        }
+
+    }
+
+
+    /*
+    ====================================================
+    DISPLAY
+    ====================================================
+    */
+
+    document
+        .getElementById("status")
+        .textContent =
+        status;
+
+
+    /*
+    This number is NOT presented as an exact bottleneck.
+
+    It represents the magnitude of the imbalance.
+    */
+
+    document
+        .getElementById("percentage")
+        .textContent =
+        Math.round(
+            Math.min(
+                99,
+                severity
+            )
+        ) + "% imbalance";
+
+
+    document
+        .getElementById("description")
+        .textContent =
+        explanation;
+
+
+    document
+        .getElementById("cpuIndex")
+        .textContent =
+        cpuScore;
+
+
+    document
+        .getElementById("gpuIndex")
+        .textContent =
+        gpuScore;
+
+
+    const scenario =
+        document
+            .getElementById("gameType")
+            .options[
+                document
+                    .getElementById("gameType")
+                    .selectedIndex
+            ]
+            .text;
+
+
+    document
+        .getElementById("scenario")
+        .textContent =
+        scenario;
+
+}
+
+
+/*
+========================================================
+EVENTS
+========================================================
+*/
+
+document
+    .getElementById("calculate")
+    .addEventListener(
+        "click",
+        calculate
+    );
+
+
+[
+    "cpu",
+    "gpu",
+    "resolution",
+    "targetFPS",
+    "gameType"
+
+].forEach(function(id){
+
+    document
+        .getElementById(id)
+        .addEventListener(
+            "change",
+            calculate
+        );
+
+});
+
+
+/*
+========================================================
+INITIAL RESULT
+========================================================
+*/
+
+calculate();
+
+</script>
+
+</body>
+</html>
